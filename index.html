@@ -29,19 +29,20 @@ button{font:inherit}
 .legend{font-size:11px;color:var(--muted)}
 svg{width:100%;height:160px;display:block;overflow:visible}
 .days{overflow:hidden}
-.day{display:grid;grid-template-columns:minmax(120px,.8fr) 110px minmax(300px,1.5fr);align-items:center;gap:12px;padding:15px 18px;border-bottom:1px solid var(--line)}
+.day{display:grid;grid-template-columns:minmax(135px,1fr) 110px minmax(300px,1fr);align-items:center;gap:12px;padding:15px 18px;border-bottom:1px solid var(--line)}
 .day:last-child{border-bottom:0}
 .day.today{background:#fafaf8}
 .date{font-weight:580;font-size:14px}
 .date small{display:block;font-weight:400;color:var(--muted);margin-top:3px}
-.weightWrap{position:relative}
+.weightWrap{position:relative;width:110px;justify-self:center}
 .weight{width:100%;height:40px;border:1px solid var(--line);border-radius:11px;padding:0 34px 0 11px;font-size:16px;background:#fff;outline:none}
 .weight:focus{border-color:#aaa}
 .unit{position:absolute;right:10px;top:11px;color:var(--muted);font-size:12px;pointer-events:none}
-.training{display:flex;gap:8px;justify-content:flex-end}
-.check{display:flex;align-items:center;gap:6px;border:1px solid var(--line);border-radius:11px;padding:9px 10px;font-size:13px;cursor:pointer;user-select:none;background:#fff}
+.training{display:flex;gap:8px;justify-content:flex-end;align-items:center}
+.check,.select{height:38px;border:1px solid var(--line);border-radius:11px;background:#fff;color:var(--text);font:inherit;font-size:13px}
+.check{display:flex;align-items:center;gap:6px;padding:0 10px;cursor:pointer;user-select:none;white-space:nowrap}
 .check input{accent-color:#111;width:15px;height:15px;margin:0}
-.select{height:36px;border:1px solid var(--line);border-radius:11px;background:#fff;color:var(--text);padding:0 8px;font:inherit;font-size:12px;outline:none}
+.select{padding:0 10px;outline:none;min-width:100px}
 .select:focus{border-color:#aaa}
 .historyCard{margin-top:12px;overflow:hidden}
 .historyHead{padding:16px 18px 10px;font-size:14px;font-weight:600}
@@ -55,7 +56,7 @@ svg{width:100%;height:160px;display:block;overflow:visible}
 header{align-items:flex-start;gap:14px;flex-direction:column}
 .weeknav{width:100%;justify-content:space-between}
 .summary{grid-template-columns:1fr 1fr}
-.day{grid-template-columns:1fr 105px;padding:14px}
+.day{grid-template-columns:1fr 110px;padding:14px}
 .training{grid-column:1/-1;justify-content:flex-start}
 .value{font-size:22px}
 }
