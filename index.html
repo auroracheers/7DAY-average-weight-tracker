@@ -1,0 +1,264 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#ffffff">
+<title>7日体重</title>
+<style>
+:root{--bg:#f6f6f4;--card:#fff;--text:#171717;--muted:#777;--line:#e9e9e6;--soft:#f3f3f0;--accent:#171717}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif}
+.app{max-width:760px;margin:auto;padding:28px 16px 60px}
+header{display:flex;justify-content:space-between;align-items:end;margin:4px 2px 22px}
+h1{font-size:28px;letter-spacing:-.6px;margin:0}
+.sub{font-size:13px;color:var(--muted);margin-top:5px}
+.weeknav{display:flex;align-items:center;gap:8px}
+button{font:inherit}
+.navbtn,.todaybtn{border:1px solid var(--line);background:#fff;border-radius:12px;height:38px;padding:0 12px;cursor:pointer}
+.navbtn{width:38px;padding:0;font-size:20px}
+.summary{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:18px}
+.metric{padding:18px}
+.label{font-size:12px;color:var(--muted);margin-bottom:7px}
+.value{font-size:26px;font-weight:650;letter-spacing:-.4px}
+.delta{font-size:12px;color:var(--muted);margin-top:5px}
+.chartCard{padding:16px 14px 8px;margin-bottom:12px}
+.chartHead{display:flex;justify-content:space-between;align-items:center;padding:0 4px 8px}
+.chartTitle{font-size:14px;font-weight:600}
+.legend{font-size:11px;color:var(--muted)}
+svg{width:100%;height:160px;display:block;overflow:visible}
+.days{overflow:hidden}
+.day{display:grid;grid-template-columns:minmax(120px,.8fr) 110px minmax(300px,1.5fr);align-items:center;gap:12px;padding:15px 18px;border-bottom:1px solid var(--line)}
+.day:last-child{border-bottom:0}
+.day.today{background:#fafaf8}
+.date{font-weight:580;font-size:14px}
+.date small{display:block;font-weight:400;color:var(--muted);margin-top:3px}
+.weightWrap{position:relative}
+.weight{width:100%;height:40px;border:1px solid var(--line);border-radius:11px;padding:0 34px 0 11px;font-size:16px;background:#fff;outline:none}
+.weight:focus{border-color:#aaa}
+.unit{position:absolute;right:10px;top:11px;color:var(--muted);font-size:12px;pointer-events:none}
+.training{display:flex;gap:8px;justify-content:flex-end}
+.check{display:flex;align-items:center;gap:6px;border:1px solid var(--line);border-radius:11px;padding:9px 10px;font-size:13px;cursor:pointer;user-select:none;background:#fff}
+.check input{accent-color:#111;width:15px;height:15px;margin:0}
+.select{height:36px;border:1px solid var(--line);border-radius:11px;background:#fff;color:var(--text);padding:0 8px;font:inherit;font-size:12px;outline:none}
+.select:focus{border-color:#aaa}
+.historyCard{margin-top:12px;overflow:hidden}
+.historyHead{padding:16px 18px 10px;font-size:14px;font-weight:600}
+.historyEmpty{padding:18px;color:var(--muted);font-size:13px}
+.historyRow{display:grid;grid-template-columns:1.2fr .8fr .8fr;gap:10px;align-items:center;padding:12px 18px;border-top:1px solid var(--line);font-size:13px}
+.historyRow.header{color:var(--muted);font-size:11px;background:#fafaf8}
+.historyRow .num{text-align:right}
+.footer{font-size:11px;color:#999;text-align:center;margin-top:14px}
+@media(max-width:600px){
+.app{padding:20px 12px 40px}
+header{align-items:flex-start;gap:14px;flex-direction:column}
+.weeknav{width:100%;justify-content:space-between}
+.summary{grid-template-columns:1fr 1fr}
+.day{grid-template-columns:1fr 105px;padding:14px}
+.training{grid-column:1/-1;justify-content:flex-start}
+.value{font-size:22px}
+}
+</style>
+</head>
+<body>
+<div class="app">
+<header>
+  <div><h1>7日体重</h1><div class="sub" id="range"></div></div>
+  <div class="weeknav">
+    <button class="navbtn" id="prev" aria-label="上一周">‹</button>
+    <button class="todaybtn" id="today">本周</button>
+    <button class="navbtn" id="next" aria-label="下一周">›</button>
+  </div>
+</header>
+
+<div class="summary">
+  <div class="card metric">
+    <div class="label">本周平均体重</div>
+    <div class="value" id="avg">—</div>
+    <div class="delta" id="count">尚无记录</div>
+  </div>
+  <div class="card metric">
+    <div class="label">较上周</div>
+    <div class="value" id="change">—</div>
+    <div class="delta" id="prevAvg">需要两周数据</div>
+  </div>
+</div>
+
+<div class="card chartCard">
+  <div class="chartHead"><div class="chartTitle">本周体重</div><div class="legend">每日记录 · 虚线为本周均值</div></div>
+  <svg id="chart" viewBox="0 0 700 160" preserveAspectRatio="none"></svg>
+</div>
+
+<div class="card days" id="days"></div>
+<div class="card historyCard">
+  <div class="historyHead">周体重变化情况</div>
+  <div id="history"></div>
+</div>
+<div class="footer">数据仅保存在当前浏览器中 · 空白日期不会计入平均值</div>
+</div>
+
+<script>
+const KEY='seven-day-weight-v1';
+let data={};
+try{data=JSON.parse(localStorage.getItem(KEY)||'{}')}catch(e){}
+let offset=0;
+const weekdays=['周一','周二','周三','周四','周五','周六','周日'];
+
+function localISO(d){
+  const y=d.getFullYear(),m=String(d.getMonth()+1).padStart(2,'0'),day=String(d.getDate()).padStart(2,'0');
+  return `${y}-${m}-${day}`;
+}
+function mondayForOffset(o){
+  const now=new Date(); now.setHours(12,0,0,0);
+  const dow=(now.getDay()+6)%7;
+  now.setDate(now.getDate()-dow+o*7);
+  return now;
+}
+function weekDates(o){
+  const m=mondayForOffset(o); return Array.from({length:7},(_,i)=>{let d=new Date(m);d.setDate(m.getDate()+i);return d});
+}
+function fmtMD(d){return `${d.getMonth()+1}月${d.getDate()}日`}
+function weekAvg(o){
+  const vals=weekDates(o).map(d=>data[localISO(d)]?.weight).filter(v=>typeof v==='number'&&!isNaN(v));
+  return vals.length?{avg:vals.reduce((a,b)=>a+b,0)/vals.length,n:vals.length}:null;
+}
+function save(){localStorage.setItem(KEY,JSON.stringify(data))}
+function setField(date,field,value){
+  data[date]=data[date]||{};
+  if(field==='weight'){
+    const v=parseFloat(value);
+    if(value.trim()===''||isNaN(v)) delete data[date].weight; else data[date].weight=v;
+  } else data[date][field]=value;
+  if(Object.keys(data[date]).length===0) delete data[date];
+  save(); updateSummary(); drawChart(); renderHistory();
+}
+
+function isoWeekInfo(date){
+  const d=new Date(Date.UTC(date.getFullYear(),date.getMonth(),date.getDate()));
+  const day=d.getUTCDay()||7;
+  d.setUTCDate(d.getUTCDate()+4-day);
+  const year=d.getUTCFullYear();
+  const yearStart=new Date(Date.UTC(year,0,1));
+  const week=Math.ceil((((d-yearStart)/86400000)+1)/7);
+  return {year,week};
+}
+function allRecordedWeeks(){
+  const keys=Object.keys(data).filter(k=>typeof data[k]?.weight==='number').sort();
+  if(!keys.length)return [];
+  const first=new Date(keys[0]+'T12:00:00'), last=new Date(keys[keys.length-1]+'T12:00:00');
+  const start=new Date(first); start.setDate(first.getDate()-((first.getDay()+6)%7));
+  const end=new Date(last); end.setDate(last.getDate()-((last.getDay()+6)%7));
+  const weeks=[];
+  for(let m=new Date(start);m<=end;m.setDate(m.getDate()+7)){
+    const ds=Array.from({length:7},(_,i)=>{const d=new Date(m);d.setDate(m.getDate()+i);return d});
+    const vals=ds.map(d=>data[localISO(d)]?.weight).filter(v=>typeof v==='number'&&!isNaN(v));
+    if(vals.length){
+      const avg=vals.reduce((a,b)=>a+b,0)/vals.length;
+      const info=isoWeekInfo(m);
+      weeks.push({monday:new Date(m),avg,n:vals.length,year:info.year,week:info.week});
+    }
+  }
+  return weeks;
+}
+function renderHistory(){
+  const box=document.getElementById('history'), weeks=allRecordedWeeks();
+  if(!weeks.length){box.innerHTML='<div class="historyEmpty">开始记录后，这里会按自然周显示体重变化。</div>';return}
+  let out='<div class="historyRow header"><div>自然周</div><div class="num">周均重</div><div class="num">周变动</div></div>';
+  weeks.slice().reverse().forEach((w,ri)=>{
+    const idx=weeks.length-1-ri;
+    const prev=idx>0?weeks[idx-1]:null;
+    const diff=prev?w.avg-prev.avg:null;
+    const month=w.monday.getMonth()+1;
+    // 月内周序号：以该自然周的周一归属月份，并按该月包含的周一顺序编号。
+    const firstDay=new Date(w.monday.getFullYear(),w.monday.getMonth(),1,12);
+    const firstMonday=new Date(firstDay);
+    const shift=(8-firstDay.getDay())%7;
+    firstMonday.setDate(firstDay.getDate()+shift);
+    let monthWeek;
+    if(w.monday < firstMonday){
+      monthWeek=1;
+    }else{
+      monthWeek=Math.floor((w.monday-firstMonday)/604800000)+1;
+    }
+    const label=`${w.year}年 ${month}月 · 第${monthWeek}周`;
+    const change=diff===null?'—':`${diff>0?'↑':diff<0?'↓':''} ${Math.abs(diff).toFixed(2)} kg`;
+    out+=`<div class="historyRow"><div>${label}</div><div class="num">${w.avg.toFixed(2)} kg</div><div class="num">${change}</div></div>`;
+  });
+  box.innerHTML=out;
+}
+
+function render(){
+  const ds=weekDates(offset), first=ds[0], last=ds[6];
+  document.getElementById('range').textContent=`${first.getFullYear()}年 ${fmtMD(first)} – ${fmtMD(last)}`;
+  const box=document.getElementById('days'); box.innerHTML='';
+  const today=localISO(new Date());
+  ds.forEach((d,i)=>{
+    const k=localISO(d),r=data[k]||{};
+    const row=document.createElement('div'); row.className='day'+(k===today?' today':'');
+    row.innerHTML=`
+      <div class="date">${fmtMD(d)}<small>${weekdays[i]}${k===today?' · 今天':''}</small></div>
+      <div class="weightWrap"><input class="weight" inputmode="decimal" type="number" min="20" max="300" step="0.1" placeholder="—" value="${r.weight??''}"><span class="unit">kg</span></div>
+      <div class="training">
+        <label class="check"><input type="checkbox" class="fasted" ${r.fasted?'checked':''}>空腹</label>
+        <select class="select appetite" aria-label="食欲">
+          <option value="">食欲</option>
+          <option value="低" ${r.appetite==='低'?'selected':''}>食欲 · 低</option>
+          <option value="正常" ${r.appetite==='正常'?'selected':''}>食欲 · 正常</option>
+          <option value="高" ${r.appetite==='高'?'selected':''}>食欲 · 高</option>
+        </select>
+        <select class="select quality" aria-label="训练质量">
+          <option value="">训练质量</option>
+          <option value="休息" ${r.quality==='休息'?'selected':''}>训练 · 休息</option>
+          <option value="差" ${r.quality==='差'?'selected':''}>训练 · 差</option>
+          <option value="正常" ${r.quality==='正常'?'selected':''}>训练 · 正常</option>
+          <option value="好" ${r.quality==='好'?'selected':''}>训练 · 好</option>
+        </select>
+      </div>`;
+    row.querySelector('.weight').addEventListener('change',e=>setField(k,'weight',e.target.value));
+    row.querySelector('.fasted').addEventListener('change',e=>setField(k,'fasted',e.target.checked));
+    row.querySelector('.appetite').addEventListener('change',e=>setField(k,'appetite',e.target.value));
+    row.querySelector('.quality').addEventListener('change',e=>setField(k,'quality',e.target.value));
+    box.appendChild(row);
+  });
+  updateSummary(); drawChart(); renderHistory();
+}
+function updateSummary(){
+  const cur=weekAvg(offset),prev=weekAvg(offset-1);
+  document.getElementById('avg').textContent=cur?`${cur.avg.toFixed(2)} kg`:'—';
+  document.getElementById('count').textContent=cur?`已记录 ${cur.n} / 7 天`:'尚无记录';
+  if(cur&&prev){
+    const diff=cur.avg-prev.avg, arrow=diff>0?'↑':diff<0?'↓':'';
+    document.getElementById('change').textContent=`${arrow} ${Math.abs(diff).toFixed(2)} kg`.trim();
+    document.getElementById('prevAvg').textContent=`上周平均 ${prev.avg.toFixed(2)} kg`;
+  }else{
+    document.getElementById('change').textContent='—';
+    document.getElementById('prevAvg').textContent='需要两周数据';
+  }
+}
+function drawChart(){
+  const svg=document.getElementById('chart'),ds=weekDates(offset);
+  const vals=ds.map(d=>data[localISO(d)]?.weight);
+  const nums=vals.filter(v=>typeof v==='number');
+  svg.innerHTML='';
+  if(!nums.length){
+    svg.innerHTML='<text x="350" y="82" text-anchor="middle" fill="#999" font-size="13">记录体重后显示趋势</text>';return;
+  }
+  let min=Math.min(...nums),max=Math.max(...nums); if(max-min<1){min-=.5;max+=.5}else{min-=.3;max+=.3}
+  const x=i=>35+i*(630/6), y=v=>130-(v-min)/(max-min)*100;
+  [30,80,130].forEach(yy=>svg.insertAdjacentHTML('beforeend',`<line x1="35" y1="${yy}" x2="665" y2="${yy}" stroke="#eeeeeb" stroke-width="1"/>`));
+  const avg=nums.reduce((a,b)=>a+b,0)/nums.length, ay=y(avg);
+  svg.insertAdjacentHTML('beforeend',`<line x1="35" y1="${ay}" x2="665" y2="${ay}" stroke="#aaa" stroke-width="1" stroke-dasharray="5 5"/>`);
+  let segments=[],seg=[];
+  vals.forEach((v,i)=>{if(typeof v==='number')seg.push([x(i),y(v)]);else{if(seg.length)segments.push(seg);seg=[]}});if(seg.length)segments.push(seg);
+  segments.forEach(s=>{if(s.length>1)svg.insertAdjacentHTML('beforeend',`<polyline points="${s.map(p=>p.join(',')).join(' ')}" fill="none" stroke="#222" stroke-width="2"/>`)});
+  vals.forEach((v,i)=>{if(typeof v==='number')svg.insertAdjacentHTML('beforeend',`<circle cx="${x(i)}" cy="${y(v)}" r="4" fill="#fff" stroke="#222" stroke-width="2"/><text x="${x(i)}" y="${y(v)-10}" text-anchor="middle" fill="#666" font-size="10">${v.toFixed(1)}</text>`)});
+  weekdays.forEach((w,i)=>svg.insertAdjacentHTML('beforeend',`<text x="${x(i)}" y="154" text-anchor="middle" fill="#999" font-size="10">${w.slice(1)}</text>`));
+}
+document.getElementById('prev').onclick=()=>{offset--;render()};
+document.getElementById('next').onclick=()=>{offset++;render()};
+document.getElementById('today').onclick=()=>{offset=0;render()};
+render();
+</script>
+</body>
+</html>
